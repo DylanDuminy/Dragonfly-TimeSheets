@@ -57,9 +57,9 @@ button.x{color:var(--warn)}
 const SITES=[],CLIENTS=[],STAFF=[],JOBS=[],OFFICE=[],BAKKIES=[];
 const CK=[['tyres','Tyres (tread, pressure, damage)'],['oil','Engine oil level'],['lights','Lights and indicators'],['fuel','Fuel level'],['wipers','Windscreen and wipers'],['aid','First aid kit'],['fire','Fire extinguisher'],['body','Body damage (note any new damage)']];
 const ckAns=(e,k)=>e.ck&&e.ck[k];
-function ckSum(i){const e=entries[i],a=CK.filter(([k])=>ckAns(e,k)).length,f=CK.filter(([k])=>ckAns(e,k)==='fault').length;return a===0?'(not done)':f?'('+f+' fault'+(f>1?'s':'')+')':a===CK.length?'(all OK)':'('+a+'/'+CK.length+' done)'}
-function ckHtml(i){const c=entries[i].ck||{};return`<div style="margin:6px 0"><button data-ckall="${i}">Mark all OK</button></div>`+CK.map(([k,l])=>`<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><div style="flex:1;font-size:13px">${l}</div><div class="seg" style="width:150px"><button data-ck="${i}|${k}|ok" class="${c[k]==='ok'?'on':''}">OK</button><button data-ck="${i}|${k}|fault" class="${c[k]==='fault'?'on':''}" style="${c[k]==='fault'?'background:var(--warn);border-color:var(--warn)':''}">Fault</button></div></div>`).join('')}
-function ckTxt(e){if(!e.bk)return'';const f=CK.filter(([k])=>ckAns(e,k)==='fault').map(x=>x[1]),nd=CK.filter(([k])=>!ckAns(e,k)).length;return f.length?'FAULT: '+f.join('; '):nd===0?'All OK':'Incomplete'}
+function ckSum(i){const e=entries[i],a=CK.filter(([k])=>ckAns(e,k)).length,f=CK.filter(([k])=>ckAns(e,k)==='fault').length;return a===0?'(not done)':f?'('+f+' not OK)':a===CK.length?'(all OK)':'('+a+'/'+CK.length+' done)'}
+function ckHtml(i){const c=entries[i].ck||{};return`<div style="margin:6px 0"><button data-ckall="${i}">Mark all OK</button></div><div class="note" style="margin:6px 0 8px">Swipe a row to the right = OK. Swipe to the left = Not OK.</div>`+CK.map(([k,l])=>{const v=c[k],bg=v==='ok'?'rgba(46,160,67,.25)':v==='fault'?'rgba(194,91,0,.28)':'var(--card)',st=v==='ok'?'<b style="color:var(--ok)">OK</b>':v==='fault'?'<b style="color:var(--warn)">NOT OK</b>':'<span class="note">swipe</span>';return`<div class="ckrow" data-ckrow="${i}|${k}" style="touch-action:pan-y;user-select:none;-webkit-user-select:none;position:relative;overflow:hidden;border-radius:10px;margin-bottom:6px;border:1px solid var(--line)"><div style="position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 14px;font-weight:700;color:#fff;background:linear-gradient(90deg,#2ea043 50%,#c25b00 50%)"><span>OK</span><span>NOT OK</span></div><div class="ckfg" style="position:relative;background:${bg};backdrop-filter:none;padding:14px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;transition:transform .15s"><span style="font-size:14px;background:${v?'transparent':'transparent'}">${l}</span>${st}</div></div>`}).join('')}
+function ckTxt(e){if(!e.bk)return'';const f=CK.filter(([k])=>ckAns(e,k)==='fault').map(x=>x[1]),nd=CK.filter(([k])=>!ckAns(e,k)).length;return f.length?'NOT OK: '+f.join('; '):nd===0?'All OK':'Incomplete'}
 const $=id=>document.getElementById(id);
 const fill=(id,a)=>$(id).innerHTML=a.map(x=>`<option value="${x}">`).join('');
 fill('dl-site',SITES);fill('dl-client',CLIENTS);fill('dl-staff',STAFF);
@@ -100,6 +100,12 @@ $('entries').addEventListener('input',ev=>{const t=ev.target;if(t.dataset.k){t.c
 $('entries').addEventListener('click',ev=>{const t=ev.target;
  if(t.dataset.del!=null){entries.splice(+t.dataset.del,1);render()}
  if(t.dataset.r!=null){entries[t.dataset.r].risk=t.dataset.v;render()}});
+function setCk(i,k,v){entries[i].ck=entries[i].ck||{};entries[i].ck[k]=v;const box=$('ckbox'+i);box.innerHTML=ckHtml(i);box.classList.remove('bad');$('cs'+i).textContent=ckSum(i)}
+let sw=null;
+$('entries').addEventListener('pointerdown',ev=>{const r=ev.target.closest('.ckrow');if(!r)return;sw={r,x:ev.clientX,dx:0,id:ev.pointerId};try{r.setPointerCapture(ev.pointerId)}catch(e){}});
+$('entries').addEventListener('pointermove',ev=>{if(!sw||ev.pointerId!==sw.id)return;sw.dx=ev.clientX-sw.x;const fg=sw.r.querySelector('.ckfg');fg.style.transition='none';fg.style.transform='translateX('+Math.max(-130,Math.min(130,sw.dx))+'px)'});
+$('entries').addEventListener('pointerup',ev=>{if(!sw||ev.pointerId!==sw.id)return;const{r,dx}=sw;sw=null;const fg=r.querySelector('.ckfg');fg.style.transition='transform .15s';fg.style.transform='';if(Math.abs(dx)>=60){const[i,k]=r.dataset.ckrow.split('|');setCk(+i,k,dx>0?'ok':'fault')}});
+$('entries').addEventListener('pointercancel',ev=>{if(sw&&ev.pointerId===sw.id){const fg=sw.r.querySelector('.ckfg');fg.style.transition='transform .15s';fg.style.transform='';sw=null}});
 $('entries').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;let i=null;
  if(b.dataset.ckall!=null){i=+b.dataset.ckall;entries[i].ck={};CK.forEach(([k])=>entries[i].ck[k]='ok')}
  else if(b.dataset.ck){const[a,k,v]=b.dataset.ck.split('|');i=+a;entries[i].ck=entries[i].ck||{};entries[i].ck[k]=entries[i].ck[k]===v?'':v}
@@ -127,7 +133,7 @@ function drawAdmin(){const f=$('af').value,t=$('at').value,S={},P={},BL=[],BK={}
  recs().filter(r=>(!f||r.date>=f)&&(!t||r.date<=t)).forEach(r=>(r.entries||[]).forEach(e=>{const a=sp(e.ss,e.se)||0,b=sp(e.ts,e.te)||0,c=sp(e.os,e.oe)||0;
   const s=S[e.site||'(no site)']??={d:new Set(),a:0,b:0,c:0,k:0,kh:0,kt:0,ks:0,w:0,j:{},dd:{}};
   s.d.add(r.date);s.a+=a;s.b+=b;s.c+=c;s.k+=km(e)||0;s.kh+=pk(e.h1,e.h2)||0;s.kt+=pk(e.t1,e.t2)||0;const dy=(s.dd[r.date]??={j:{},n:[],h:0,k:0});if(e.job)dy.j[e.job]=(dy.j[e.job]||0)+1;if(e.note)dy.n.push(e.note);dy.h+=a+b+c;dy.k+=km(e)||0;
-  if(e.bk){const res=ckTxt(e),bb=BK[e.bk]??={d:new Set(),n:0,k:0,f:0};bb.d.add(r.date);bb.n++;bb.k+=km(e)||0;if(res.startsWith('FAULT'))bb.f++;BL.push({d:r.date,b:e.bk,dr:e.dr||'',s:e.site||'',bi:e.bi||'',bo:e.bo||'',k:km(e)||0,res})}s.w+=+e.stk||0;if(e.job)s.j[e.job]=(s.j[e.job]||0)+1;
+  if(e.bk){const res=ckTxt(e),bb=BK[e.bk]??={d:new Set(),n:0,k:0,f:0};bb.d.add(r.date);bb.n++;bb.k+=km(e)||0;if(res.startsWith('NOT OK'))bb.f++;BL.push({d:r.date,b:e.bk,dr:e.dr||'',s:e.site||'',bi:e.bi||'',bo:e.bo||'',k:km(e)||0,res})}s.w+=+e.stk||0;if(e.job)s.j[e.job]=(s.j[e.job]||0)+1;
   new Set([e.s,e.a1,e.a2].filter(n=>n&&n!=='None')).forEach(n=>{const p=P[n]??={a:0,b:0,c:0};p.a+=a;p.b+=b;p.c+=c})}));
  const tb=(h,r)=>`<div style="overflow-x:auto;margin-top:6px"><table><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${r.join('')||'<tr><td>No data</td></tr>'}</tbody></table></div>`;
  const G=Object.values(S).reduce((x,s)=>({kh:x.kh+s.kh,kt:x.kt+s.kt,ks:x.ks+s.ks,k:x.k+s.k}),{kh:0,kt:0,ks:0,k:0});
@@ -137,7 +143,7 @@ function drawAdmin(){const f=$('af').value,t=$('at').value,S={},P={},BL=[],BK={}
  const sk=Object.keys(S).sort(),pk2=Object.keys(P).sort(),J={};Object.values(S).forEach(s=>Object.entries(s.j).forEach(([j,q])=>J[j]=(J[j]||0)+q));const jk=Object.keys(J).sort((x,y)=>J[y]-J[x]),T3=Object.values(S).reduce((x,s)=>[x[0]+s.b,x[1]+s.c,x[2]+s.a],[0,0,0]);
  const bkSum=Object.keys(BK).sort().map(n=>{const b=BK[n];return`<tr><td>${esc(n)}</td><td>${b.d.size}</td><td>${b.n}</td><td>${f2(b.k)}</td><td>${b.f?'<b>'+b.f+'</b>':'0'}</td></tr>`}),
   bkRows=BL.sort((x,y)=>x.d<y.d?1:x.d>y.d?-1:x.b.localeCompare(y.b)).map(x=>`<tr><td>${x.d}</td><td>${esc(x.b)}</td><td>${esc(x.dr)}</td><td>${esc(x.s)}</td><td>${x.bi}</td><td>${x.bo}</td><td>${f2(x.k)}</td><td>${esc(x.res)}</td></tr>`),
-  bakkieHtml=`<label style="margin-top:16px">By bakkie</label>`+tb(['Bakkie','Days used','Job cards','Km','Job cards with faults'],bkSum)+`<label style="margin-top:16px">Bakkie log: who drove which bakkie, each day</label>`+tb(['Date','Bakkie','Driver','Site','Log in','Log off','Km','Checklist'],bkRows);
+  bakkieHtml=`<label style="margin-top:16px">By bakkie</label>`+tb(['Bakkie','Days used','Job cards','Km','Job cards with items not OK'],bkSum)+`<label style="margin-top:16px">Bakkie log: who drove which bakkie, each day</label>`+tb(['Date','Bakkie','Driver','Site','Log in','Log off','Km','Checklist'],bkRows);
  CH={site:{l:sk,v:sk.map(n=>S[n].a+S[n].b+S[n].c)},person:{l:pk2,v:pk2.map(n=>P[n].a+P[n].b+P[n].c)},type:{l:['Travelling','Office','Survey'],v:T3},jobs:{l:jk,v:jk.map(j=>J[j])}};drawCharts();
  $('rep').innerHTML=`<label style="margin-top:12px">By site</label>`+tb(['Site','Days','Travelling h','Office h','Survey h','Total h','Home>Office km','Office>Site>Home km','Total km','Stakes','Work done'],Object.keys(S).sort().map(n=>{const s=S[n];return`<tr><td>${esc(n)}</td><td>${s.d.size}</td><td>${f2(s.b)}</td><td>${f2(s.c)}</td><td>${f2(s.a)}</td><td><b>${f2(s.a+s.b+s.c)}</b></td><td>${f2(s.kh)}</td><td>${f2(s.kt)}</td><td><b>${f2(s.k)}</b></td><td>${s.w}</td><td>${Object.entries(s.j).map(([j,q])=>esc(j)+' x'+q).join(', ')}</td></tr>`}))
  +totalsHtml+dailyHtml+bakkieHtml+`<label style="margin-top:16px">By person</label>`+tb(['Name','Travelling h','Office h','Survey h','Total h'],Object.keys(P).sort().map(n=>{const p=P[n];return`<tr><td>${esc(n)}</td><td>${f2(p.b)}</td><td>${f2(p.c)}</td><td>${f2(p.a)}</td><td><b>${f2(p.a+p.b+p.c)}</b></td></tr>`}))}
@@ -252,7 +258,7 @@ function probs(){const o=[],nm={site:'Site',client:'Client',job:'Job description
   if(km(e)==null&&e.site!=='Office'&&!o.some(p=>p.i===i&&['h1','h2','t1','t2'].includes(p.k)))o.push({i,k:'h1',t:'Fill in at least one odometer pair'});
   if(e.site!=='Office'){const n2={bk:'Bakkie',dr:'Driver',bi:'Bakkie log in time',bo:'Bakkie log off time'};['bk','dr','bi','bo'].forEach(k=>{if(!e[k])o.push({i,k,t:n2[k]+' is empty'})});
    const nd=CK.filter(([k])=>!ckAns(e,k)).length;if(nd)o.push({i,k:'ckbox',t:'Bakkie checklist: '+nd+' item(s) not answered (tap Mark all OK if everything is fine)'});
-   if(CK.some(([k])=>ckAns(e,k)==='fault')&&!(e.note||'').trim())o.push({i,k:'note',t:'You reported a bakkie fault, so explain it in Notes'})}
+   if(CK.some(([k])=>ckAns(e,k)==='fault')&&!(e.note||'').trim())o.push({i,k:'note',t:'You marked a bakkie item as not OK, so explain it in Notes'})}
  });
  return o}
 function elsFor(p){if(p.k==='ckbox'){const x=document.getElementById('ckbox'+p.i);return x?[x]:[]}return[...document.querySelectorAll(p.k==='risk'?`[data-r="${p.i}"]`:`[data-i="${p.i}"][data-k="${p.k}"]`)]}
