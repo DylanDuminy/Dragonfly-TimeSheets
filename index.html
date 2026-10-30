@@ -85,7 +85,7 @@ function render(){
  <div class="grid">${selp(i,'site','Site *',SITES)}${selp(i,'client','Client *',CLIENTS)}
  ${selp(i,'s','Surveyor / Pilot',STAFF)}${selp(i,'a1','Assistant / Pilot',STAFF)}${selp(i,'a2','Assistant 2',STAFF)}
  ${inp(i,'ts','Travelling time: start','time')}${inp(i,'te','Travelling time: end','time')}${inp(i,'os','Office time: start','time')}${inp(i,'oe','Office time: end','time')}${inp(i,'ss','Survey time: start','time')}${inp(i,'se','Survey time: end','time')}
- ${[['h1','Home to Office: opening odometer'],['h2','Home to Office: closing odometer'],['t1','Office to Site / Home: opening odometer'],['t2','Office to Site / Home: closing odometer']].map(([k,l])=>inp(i,k,l,'number','','inputmode="numeric"')).join('')}
+ ${[['h1','Home to Office/Site: opening odometer'],['h2','Home to Office/Site: closing odometer'],['t1','Office/Site to Home: opening odometer'],['t2','Office/Site to Home: closing odometer']].map(([k,l])=>inp(i,k,l,'number','','inputmode="numeric"')).join('')}
  ${selp(i,'bk','Bakkie *',BAKKIES)}${selp(i,'dr','Driver *',STAFF)}${inp(i,'bi','Bakkie log in (time) *','time')}${inp(i,'bo','Bakkie log off (time) *','time')}
  <div style="grid-column:1/-1"><details><summary style="cursor:pointer;font-weight:700;color:var(--navy);padding:6px 0">Bakkie checklist <span id="cs${i}" class="note">${ckSum(i)}</span></summary><div id="ckbox${i}">${ckHtml(i)}</div></details></div>
  <div class="sp2"><label>Job description *</label>${sel(i,'job',JOBS,'Choose')}</div>
@@ -99,7 +99,7 @@ function calc(){let H=0,K=0,S=0,A=0,B=0,C=0,KH=0,KT=0;
  entries.forEach((e,i)=>{const h=hrs(e),k=km(e);H+=h||0;K+=k||0;S+=+e.stk||0;A+=sp(e.ss,e.se)||0;B+=sp(e.ts,e.te)||0;C+=sp(e.os,e.oe)||0;KH+=pk(e.h1,e.h2)||0;KT+=pk(e.t1,e.t2)||0;
   T('h'+i,h);T('sh'+i,sp(e.ss,e.se));T('th'+i,sp(e.ts,e.te));T('oh'+i,sp(e.os,e.oe));$('k'+i)&&($('k'+i).textContent=f2(k));
   $('k'+i)&&$('k'+i).style.setProperty('color',k<0?'var(--warn)':'')});
- $('tot').innerHTML=`<div><span>Sites</span>${entries.filter(e=>e.site).length}</div><div><span>Travelling h</span>${f2(B)}</div><div><span>Office h</span>${f2(C)}</div><div><span>Survey h</span>${f2(A)}</div><div><span>Total hours</span>${f2(H)}</div><div><span>Home to Office km</span>${f2(KH)}</div><div><span>Office to Site/Home km</span>${f2(KT)}</div><div><span>Total km</span>${f2(K)}</div><div><span>Wood stakes</span>${S}</div>`}
+ $('tot').innerHTML=`<div><span>Sites</span>${entries.filter(e=>e.site).length}</div><div><span>Travelling h</span>${f2(B)}</div><div><span>Office h</span>${f2(C)}</div><div><span>Survey h</span>${f2(A)}</div><div><span>Total hours</span>${f2(H)}</div><div><span>Home to Office/Site km</span>${f2(KH)}</div><div><span>Office/Site to Home km</span>${f2(KT)}</div><div><span>Total km</span>${f2(K)}</div><div><span>Wood stakes</span>${S}</div>`}
 $('entries').addEventListener('input',ev=>{const t=ev.target;if(t.dataset.k){t.classList.remove('bad');entries[t.dataset.i][t.dataset.k]=t.value;calc()}});
 $('entries').addEventListener('click',ev=>{const t=ev.target;
  if(t.dataset.del!=null){entries.splice(+t.dataset.del,1);render()}
@@ -127,7 +127,7 @@ function drawHist(){const k=Object.keys(hist).sort().reverse();
 
 function load(d){date=d;const r=hist[d];editing=!!r;entries=r?JSON.parse(JSON.stringify(r.entries)):[blank()];render();say('')}
 $('date').onchange=e=>{if(e.target.value)load(e.target.value)};
-$('exp').onclick=async()=>{const rows=[['Date','Site','Client','Surveyor/Pilot','Assistant/Pilot','Assistant 2','Travel Start','Travel End','Office Start','Office End','Survey Start','Survey End','Travel h','Office h','Survey h','Total h','Home-Office Open','Home-Office Close','Office-Site/Home Open','Office-Site/Home Close','Travel KM','Job','Wood Stakes','Risk Assessment','Notes','Bakkie','Driver','Bakkie log in','Bakkie log off','Bakkie checklist']];
+$('exp').onclick=async()=>{const rows=[['Date','Site','Client','Surveyor/Pilot','Assistant/Pilot','Assistant 2','Travel Start','Travel End','Office Start','Office End','Survey Start','Survey End','Travel h','Office h','Survey h','Total h','Home to Office/Site Open','Home to Office/Site Close','Office/Site to Home Open','Office/Site to Home Close','Travel KM','Job','Wood Stakes','Risk Assessment','Notes','Bakkie','Driver','Bakkie log in','Bakkie log off','Bakkie checklist']];
  Object.keys(hist).sort().forEach(d=>hist[d].entries.forEach(e=>rows.push([d,e.site,e.client,e.s,e.a1,e.a2,e.ts,e.te,e.os,e.oe,e.ss,e.se,f2(sp(e.ts,e.te)),f2(sp(e.os,e.oe)),f2(sp(e.ss,e.se)),f2(hrs(e)),e.h1,e.h2,e.t1,e.t2,f2(km(e)),e.job,e.stk,e.risk,e.note,e.bk,e.dr,e.bi,e.bo,ckTxt(e)])));
  const csv=rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
  try{const dn=await claude.use('downloads');if(!dn){say('Download not available here.',true);return}await dn.save({filename:'survey-timesheets.csv',data:csv})}catch(e){say('Download cancelled.',true)}};
@@ -141,7 +141,7 @@ function drawAdmin(){const f=$('af').value,t=$('at').value,S={},P={},BL=[],BK={}
   new Set([e.s,e.a1,e.a2].filter(n=>n&&n!=='None')).forEach(n=>{const p=P[n]??={a:0,b:0,c:0};p.a+=a;p.b+=b;p.c+=c})}));
  const tb=(h,r)=>`<div style="overflow-x:auto;margin-top:6px"><table><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${r.join('')||'<tr><td>No data</td></tr>'}</tbody></table></div>`;
  const G=Object.values(S).reduce((x,s)=>({kh:x.kh+s.kh,kt:x.kt+s.kt,ks:x.ks+s.ks,k:x.k+s.k}),{kh:0,kt:0,ks:0,k:0});
- const totalsHtml=`<p style="margin:8px 0;font-size:13px"><b>All sites: Home to Office ${f2(G.kh)} km | Office to Site to Home ${f2(G.kt)} km | Total ${f2(G.k)} km</b></p>`;
+ const totalsHtml=`<p style="margin:8px 0;font-size:13px"><b>All sites: Home to Office/Site ${f2(G.kh)} km | Office/Site to Home ${f2(G.kt)} km | Total ${f2(G.k)} km</b></p>`;
  const dr=[];Object.keys(S).sort().forEach(n=>Object.keys(S[n].dd).sort().forEach(d=>{const y=S[n].dd[d];dr.push(`<tr><td>${esc(n)}</td><td>${d}</td><td>${Object.entries(y.j).map(([j,q])=>esc(j)+' x'+q).join(', ')||'-'}</td><td>${f2(y.h)}</td><td>${f2(y.k)}</td><td>${esc(y.n.join('; '))}</td></tr>`)}));
  const dailyHtml=`<label style="margin-top:16px">What we did at each site, each day</label>`+tb(['Site','Date','Work done (times)','Hours','Km','Notes'],dr);
  const sk=Object.keys(S).sort(),pk2=Object.keys(P).sort(),J={};Object.values(S).forEach(s=>Object.entries(s.j).forEach(([j,q])=>J[j]=(J[j]||0)+q));const jk=Object.keys(J).sort((x,y)=>J[y]-J[x]),T3=Object.values(S).reduce((x,s)=>[x[0]+s.b,x[1]+s.c,x[2]+s.a],[0,0,0]);
@@ -149,7 +149,7 @@ function drawAdmin(){const f=$('af').value,t=$('at').value,S={},P={},BL=[],BK={}
   bkRows=BL.sort((x,y)=>x.d<y.d?1:x.d>y.d?-1:x.b.localeCompare(y.b)).map(x=>`<tr><td>${x.d}</td><td>${esc(x.b)}</td><td>${esc(x.dr)}</td><td>${esc(x.s)}</td><td>${x.bi}</td><td>${x.bo}</td><td>${f2(x.k)}</td><td>${esc(x.res)}</td></tr>`),
   bakkieHtml=`<label style="margin-top:16px">By bakkie</label>`+tb(['Bakkie','Days used','Job cards','Km','Job cards with items not OK'],bkSum)+`<label style="margin-top:16px">Bakkie log: who drove which bakkie, each day</label>`+tb(['Date','Bakkie','Driver','Site','Log in','Log off','Km','Checklist'],bkRows);
  CH={site:{l:sk,v:sk.map(n=>S[n].a+S[n].b+S[n].c)},person:{l:pk2,v:pk2.map(n=>P[n].a+P[n].b+P[n].c)},type:{l:['Travelling','Office','Survey'],v:T3},jobs:{l:jk,v:jk.map(j=>J[j])}};drawCharts();
- $('rep').innerHTML=`<label style="margin-top:12px">By site</label>`+tb(['Site','Days','Travelling h','Office h','Survey h','Total h','Home>Office km','Office>Site>Home km','Total km','Stakes','Work done'],Object.keys(S).sort().map(n=>{const s=S[n];return`<tr><td>${esc(n)}</td><td>${s.d.size}</td><td>${f2(s.b)}</td><td>${f2(s.c)}</td><td>${f2(s.a)}</td><td><b>${f2(s.a+s.b+s.c)}</b></td><td>${f2(s.kh)}</td><td>${f2(s.kt)}</td><td><b>${f2(s.k)}</b></td><td>${s.w}</td><td>${Object.entries(s.j).map(([j,q])=>esc(j)+' x'+q).join(', ')}</td></tr>`}))
+ $('rep').innerHTML=`<label style="margin-top:12px">By site</label>`+tb(['Site','Days','Travelling h','Office h','Survey h','Total h','Home to Office/Site km','Office/Site to Home km','Total km','Stakes','Work done'],Object.keys(S).sort().map(n=>{const s=S[n];return`<tr><td>${esc(n)}</td><td>${s.d.size}</td><td>${f2(s.b)}</td><td>${f2(s.c)}</td><td>${f2(s.a)}</td><td><b>${f2(s.a+s.b+s.c)}</b></td><td>${f2(s.kh)}</td><td>${f2(s.kt)}</td><td><b>${f2(s.k)}</b></td><td>${s.w}</td><td>${Object.entries(s.j).map(([j,q])=>esc(j)+' x'+q).join(', ')}</td></tr>`}))
  +totalsHtml+dailyHtml+bakkieHtml+`<label style="margin-top:16px">By person</label>`+tb(['Name','Travelling h','Office h','Survey h','Total h'],Object.keys(P).sort().map(n=>{const p=P[n];return`<tr><td>${esc(n)}</td><td>${f2(p.b)}</td><td>${f2(p.c)}</td><td>${f2(p.a)}</td><td><b>${f2(p.a+p.b+p.c)}</b></td></tr>`}))}
 let me=null,isEd=false,lg={},pwFirst=false,gmode='in',subscribed=false,PROF=null;
 const CFG=window.APP_CONFIG||{};
@@ -258,7 +258,7 @@ function probs(){const o=[],nm={site:'Site',client:'Client',job:'Job description
   if([e.site,e.client,e.job].includes('OTHER')&&!(e.note||'').trim())o.push({i,k:'note',t:'You chose OTHER, so explain it in Notes'});
   [['ss','se','Survey'],['ts','te','Travelling'],['os','oe','Office']].forEach(([a,b,n])=>{if(!e[a]!==!e[b])o.push({i,k:e[a]?b:a,t:n+' time needs both a start and an end'})});
   if(hrs(e)==null&&!o.some(p=>p.i===i&&['ss','se','ts','te','os','oe'].includes(p.k)))o.push({i,k:'ts',t:'Fill in at least one time (travelling, office or survey)'});
-  [['h1','h2','Home to Office'],['t1','t2','Office to Site / Home']].forEach(([a,b,n])=>{const x=e[a]===''||e[a]==null,y=e[b]===''||e[b]==null;if(x!==y)o.push({i,k:x?a:b,t:n+' needs both an opening and a closing odometer'});else if(!x&&pk(e[a],e[b])<0)o.push({i,k:b,t:n+': closing odometer is lower than the opening'})});
+  [['h1','h2','Home to Office/Site'],['t1','t2','Office/Site to Home']].forEach(([a,b,n])=>{const x=e[a]===''||e[a]==null,y=e[b]===''||e[b]==null;if(x!==y)o.push({i,k:x?a:b,t:n+' needs both an opening and a closing odometer'});else if(!x&&pk(e[a],e[b])<0)o.push({i,k:b,t:n+': closing odometer is lower than the opening'})});
   if(km(e)==null&&e.site!=='Office'&&!o.some(p=>p.i===i&&['h1','h2','t1','t2'].includes(p.k)))o.push({i,k:'h1',t:'Fill in at least one odometer pair'});
   if(e.site!=='Office'){const n2={bk:'Bakkie',dr:'Driver',bi:'Bakkie log in time',bo:'Bakkie log off time'};['bk','dr','bi','bo'].forEach(k=>{if(!e[k])o.push({i,k,t:n2[k]+' is empty'})});
    const nd=CK.filter(([k])=>!ckAns(e,k)).length;if(nd)o.push({i,k:'ckbox',t:'Bakkie checklist: '+nd+' item(s) not answered (tap Mark all OK if everything is fine)'});
@@ -331,9 +331,9 @@ function sheetPdf(){if(!PL()){say('The PDF tool did not load. Check your connect
  doc.setFontSize(14);doc.text('DRAGONFLY MINE TECHNICAL SERVICES - Survey Team Daily Time Sheet',14,14);try{doc.addImage(LOGO,'JPEG',247,6,36,36*LOGO_R)}catch(e){}
  doc.setFontSize(10);doc.text('Date: '+date+(me?'     Name: '+me:''),14,20);
  const body=entries.map((e,i)=>[i+1,e.site,e.client,e.s,e.a1,e.a2,sp2(e.ts,e.te),sp2(e.os,e.oe),sp2(e.ss,e.se),f2(hrs(e)),e.h1,e.h2,e.t1,e.t2,f2(km(e)),e.job,e.stk,e.risk,e.note,e.bk,e.dr,e.bi,e.bo,ckTxt(e)]);
- doc.autoTable({head:[['#','Site','Client','Surveyor / Pilot','Assistant / Pilot','Assistant 2','Travelling','Office','Survey','Total h','Home>Office open','Home>Office close','Office>Site/Home open','Office>Site/Home close','KM','Job','Stakes','Risk','Notes','Bakkie','Driver','Log in','Log off','Checklist']],body,startY:24,theme:'grid',styles:{fontSize:5.5,cellPadding:1,lineWidth:0.3,lineColor:[30,30,30]},headStyles:{fillColor:[42,45,127],textColor:[255,255,255]}});
+ doc.autoTable({head:[['#','Site','Client','Surveyor / Pilot','Assistant / Pilot','Assistant 2','Travelling','Office','Survey','Total h','Home to Office/Site open','Home to Office/Site close','Office/Site to Home open','Office/Site to Home close','KM','Job','Stakes','Risk','Notes','Bakkie','Driver','Log in','Log off','Checklist']],body,startY:24,theme:'grid',styles:{fontSize:5.5,cellPadding:1,lineWidth:0.3,lineColor:[30,30,30]},headStyles:{fillColor:[42,45,127],textColor:[255,255,255]}});
  const H=entries.reduce((a,e)=>a+(hrs(e)||0),0),K=entries.reduce((a,e)=>a+(km(e)||0),0),S=entries.reduce((a,e)=>a+(+e.stk||0),0),y=doc.lastAutoTable.finalY+8;
- doc.setFontSize(10);doc.text('Total hours: '+f2(H)+'     Total km: '+f2(K)+'     Wood stakes: '+S,14,y);doc.text('Home to Office km: '+f2(entries.reduce((a,e)=>a+(pk(e.h1,e.h2)||0),0))+'     Office to Site to Home km: '+f2(entries.reduce((a,e)=>a+(pk(e.t1,e.t2)||0),0)),14,y+7);doc.text('Signature: ______________________',14,y+14);
+ doc.setFontSize(10);doc.text('Total hours: '+f2(H)+'     Total km: '+f2(K)+'     Wood stakes: '+S,14,y);doc.text('Home to Office/Site km: '+f2(entries.reduce((a,e)=>a+(pk(e.h1,e.h2)||0),0))+'     Office/Site to Home km: '+f2(entries.reduce((a,e)=>a+(pk(e.t1,e.t2)||0),0)),14,y+7);doc.text('Signature: ______________________',14,y+14);
  savePdf(doc,'timesheet-'+date+'.pdf')}
 function adminPdf(){if(!PL()){say('The PDF tool did not load. Check your connection and try again.',true);return}
  const doc=new (PL())({orientation:'landscape',format:'a4'}),f=$('af').value,t=$('at').value;
@@ -366,7 +366,7 @@ function drawReg(){const m=$('am').value;if(!m)return;const[Y,M]=m.split('-').ma
  $('reg').innerHTML=h}
 $('am').onchange=drawReg;
 $('af').onchange=$('at').onchange=drawAdmin;
-$('aexp').onclick=async()=>{const rows=[['Date','Submitted by (id)','Site','Client','Surveyor/Pilot','Assistant/Pilot','Assistant 2','Travel h','Office h','Survey h','Home-Office open','Home-Office close','Office-Site/Home open','Office-Site/Home close','Travel KM','Job','Wood Stakes','Risk Assessment','Notes','Bakkie','Driver','Bakkie log in','Bakkie log off','Bakkie checklist']];
+$('aexp').onclick=async()=>{const rows=[['Date','Submitted by (id)','Site','Client','Surveyor/Pilot','Assistant/Pilot','Assistant 2','Travel h','Office h','Survey h','Home to Office/Site open','Home to Office/Site close','Office/Site to Home open','Office/Site to Home close','Travel KM','Job','Wood Stakes','Risk Assessment','Notes','Bakkie','Driver','Bakkie log in','Bakkie log off','Bakkie checklist']];
  recs().sort((x,y)=>x.date<y.date?-1:1).forEach(r=>(r.entries||[]).forEach(e=>rows.push([r.date,r.uid,e.site,e.client,e.s,e.a1,e.a2,f2(sp(e.ts,e.te)),f2(sp(e.os,e.oe)),f2(sp(e.ss,e.se)),e.h1,e.h2,e.t1,e.t2,f2(km(e)),e.job,e.stk,e.risk,e.note,e.bk,e.dr,e.bi,e.bo,ckTxt(e)])));
  const csv=rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
  try{const dn=await claude.use('downloads');await dn.save({filename:'admin-timesheets.csv',data:csv})}catch(e){}};
